@@ -112,17 +112,11 @@ system.cpu.dcache.connectBus(system.l2bus)
 system.l2cache = L2Cache(opts)
 system.l2cache.connectCPUSideBus(system.l2bus)
 
-system.l3bus = L2XBar()
-system.l2cache.connectMemSideBus(system.l3bus)
-system.l3cache = L2Cache(opts)
-system.l3cache.connectCPUSideBus(system.l3bus)
-
 # Create a memory bus
 system.membus = SystemXBar()
-system.l3cache.connectMemSideBus(system.membus)
 
 # Connect the L2 cache to the membus
-#####system.l2cache.connectMemSideBus(system.membus)
+system.l2cache.connectMemSideBus(system.membus)
 
 # create the interrupt controller for the CPU
 system.cpu.createInterruptController()
