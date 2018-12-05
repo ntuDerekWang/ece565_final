@@ -50,9 +50,11 @@
 
 #include <functional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "base/logging.hh"
+#include "base/random.hh"
 #include "base/types.hh"
 #include "mem/cache/base.hh"
 #include "mem/cache/cache_blk.hh"
@@ -84,6 +86,7 @@ class BaseSetAssoc : public BaseTags
     /** Replacement policy */
     BaseReplacementPolicy *replacementPolicy;
 
+    std::unordered_set<Addr> Atcache;
   public:
     /** Convenience typedef. */
      typedef BaseSetAssocParams Params;
@@ -122,8 +125,32 @@ class BaseSetAssoc : public BaseTags
      * @param lat The latency of the tag lookup.
      * @return Pointer to the cache block if found.
      */
+    bool hitTaginAtcache(Addr address)
+    {
+       return Atcache.find(address) != Atcache.end();
+    }
+
+    void insertTaginAtcache(Addr address)
+    {
+        if (Atcache.size() >= numEntriesAtcache) {
+            int bucket, bucket_size;
+            do {
+                bucket = random_mt.random(0, (int)Atcache.bucket_count() - 1);
+            } while ( (bucket_size = Atcache.bucket_size(bucket)) == 0 );
+            auto block = std::next(Atcache.begin(bucket),
+                               random_mt.random(0, bucket_size - 1));
+            Atcache.erase(*block);
+        }
+        Atcache.insert(address);
+    }
+
     CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat) override
     {
+        Addr tag = extractTag(addr);
+        bool TagInAtcache = hitTaginAtcache(tag);
+        if (!TagInAtcache)
+            insertTaginAtcache(tag);
+
         CacheBlk *blk = findBlock(addr, is_secure);
 
         // Access all tags in parallel, hence one in each way.  The data side
@@ -148,7 +175,9 @@ class BaseSetAssoc : public BaseTags
         }
 
         // The tag lookup latency is the same for a hit or a miss
-        lat = lookupLatency;
+        lat = AtcacheLookupLatency;
+        if (TagInAtcache)
+            lat += lookupLatency;
 
         return blk;
     }

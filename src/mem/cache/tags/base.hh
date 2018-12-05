@@ -148,7 +148,8 @@ class BaseTags : public ClockedObject
     Stats::Scalar tagAccesses;
     /** Number of data blocks consulted over all accesses. */
     Stats::Scalar dataAccesses;
-
+    int numEntriesAtcache;
+    Cycles AtcacheLookupLatency;
     /**
      * @}
      */

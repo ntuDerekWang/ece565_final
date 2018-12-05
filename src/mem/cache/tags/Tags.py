@@ -73,6 +73,9 @@ class BaseTags(ClockedObject):
     entry_size = Param.Int(Parent.cache_line_size,
                            "Indexing entry size in bytes")
 
+    numEntriesAtcache = Param.Int(100, "number of entries in Atcache")
+    AtcacheLookupLatency = Param.Cycles(1, "Atcache lookup latency")
+
 class BaseSetAssoc(BaseTags):
     type = 'BaseSetAssoc'
     cxx_header = "mem/cache/tags/base_set_assoc.hh"
