@@ -49,6 +49,7 @@
 #define __MEM_CACHE_TAGS_BASE_SET_ASSOC_HH__
 
 #include <functional>
+#include <iostream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -64,6 +65,7 @@
 #include "mem/cache/tags/indexing_policies/base.hh"
 #include "params/BaseSetAssoc.hh"
 
+using namespace std;
 /**
  * A basic cache tag store.
  * @sa  \ref gem5MemorySystem "gem5 Memory System"
@@ -146,11 +148,13 @@ class BaseSetAssoc : public BaseTags
 
     CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat) override
     {
-        Addr tag = extractTag(addr);
-        bool TagInAtcache = hitTaginAtcache(tag);
-        if (!TagInAtcache)
-            insertTaginAtcache(tag);
-
+        bool TagInAtcache = false;
+        if (numEntriesAtcache != 0) {
+            Addr tag = extractTag(addr);
+            bool TagInAtcache = hitTaginAtcache(tag);
+            if (!TagInAtcache)
+                insertTaginAtcache(tag);
+        }
         CacheBlk *blk = findBlock(addr, is_secure);
 
         // Access all tags in parallel, hence one in each way.  The data side
@@ -175,10 +179,14 @@ class BaseSetAssoc : public BaseTags
         }
 
         // The tag lookup latency is the same for a hit or a miss
-        lat = AtcacheLookupLatency;
-        if (TagInAtcache)
-            lat += lookupLatency;
-
+        if (numEntriesAtcache != 0 ) {
+            lat = AtcacheLookupLatency;
+            if (!TagInAtcache) {
+                lat += lookupLatency;
+            }
+        } else {
+            lat = lookupLatency;
+        }
         return blk;
     }
 
