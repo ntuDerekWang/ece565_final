@@ -50,9 +50,9 @@
 
 #include <functional>
 #include <iostream>
+#include <map>
 #include <string>
 #include <unordered_set>
-#include <vector>
 
 #include "base/logging.hh"
 #include "base/random.hh"
@@ -64,6 +64,10 @@
 #include "mem/cache/tags/base.hh"
 #include "mem/cache/tags/indexing_policies/base.hh"
 #include "params/BaseSetAssoc.hh"
+
+extern int access_at;
+extern int hit_count;
+extern int miss_count;
 
 using namespace std;
 /**
@@ -88,7 +92,7 @@ class BaseSetAssoc : public BaseTags
     /** Replacement policy */
     BaseReplacementPolicy *replacementPolicy;
 
-    std::unordered_set<Addr> Atcache;
+    std::map<Addr, unordered_set<Addr>> Atcache;
   public:
     /** Convenience typedef. */
      typedef BaseSetAssocParams Params;
@@ -129,31 +133,53 @@ class BaseSetAssoc : public BaseTags
      */
     bool hitTaginAtcache(Addr address)
     {
-       return Atcache.find(address) != Atcache.end();
+       Addr set_addr = indexingPolicy->extractSet(address);
+       auto it = Atcache.find(set_addr);
+       if (it == Atcache.end())
+           return false;
+       Addr tag = extractTag(address);
+       return (it->second).find(tag) != (it->second).end();
+
     }
 
     void insertTaginAtcache(Addr address)
     {
-        if (Atcache.size() >= numEntriesAtcache) {
+       Addr set_addr = indexingPolicy->extractSet(address);
+       auto it = Atcache.find(set_addr);
+       if (it == Atcache.end()) {
+            unordered_set<Addr> item;
+            item.insert(extractTag(address));
+            Atcache[set_addr] = item;
+            return;
+       }
+
+       if ((it->second).size() >= 16) {
             int bucket, bucket_size;
             do {
-                bucket = random_mt.random(0, (int)Atcache.bucket_count() - 1);
-            } while ( (bucket_size = Atcache.bucket_size(bucket)) == 0 );
-            auto block = std::next(Atcache.begin(bucket),
+                bucket = random_mt.random(0,
+                       (int)(it->second).bucket_count() - 1);
+            } while ( (bucket_size = (it->second).bucket_size(bucket)) == 0 );
+            auto block = std::next((it->second).begin(bucket),
                                random_mt.random(0, bucket_size - 1));
-            Atcache.erase(*block);
+            (it->second).erase(*block);
         }
-        Atcache.insert(address);
+        (it->second).insert(extractTag(address));
     }
 
     CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat) override
     {
         bool TagInAtcache = false;
         if (numEntriesAtcache != 0) {
-            Addr tag = extractTag(addr);
-            bool TagInAtcache = hitTaginAtcache(tag);
-            if (!TagInAtcache)
-                insertTaginAtcache(tag);
+            //cout << "000 Atcache.size: " << Atcache.size() << endl;
+            TagInAtcache = hitTaginAtcache(addr);
+            if (!TagInAtcache) {
+//                Addr tag = extractTag(addr);
+                insertTaginAtcache(addr);
+              //  cout << "Miss!!!!!" << endl;
+            } //else
+                //cout << "Hit!!!!!" << endl;
+            //cout << "111 Atcache.size: " << Atcache.size() << endl;
+
         }
         CacheBlk *blk = findBlock(addr, is_secure);
 
@@ -180,9 +206,13 @@ class BaseSetAssoc : public BaseTags
 
         // The tag lookup latency is the same for a hit or a miss
         if (numEntriesAtcache != 0 ) {
+            access_at++;
             lat = AtcacheLookupLatency;
             if (!TagInAtcache) {
+                miss_count++;
                 lat += lookupLatency;
+            } else {
+                hit_count++;
             }
         } else {
             lat = lookupLatency;

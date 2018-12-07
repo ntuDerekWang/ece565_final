@@ -137,7 +137,7 @@ class BaseIndexingPolicy : public SimObject
      * @return The tag of the address.
      */
     Addr extractTag(const Addr addr) const;
-
+    virtual uint32_t extractSet(const Addr addr) const {return 0;};
     /**
      * Find all possible entries for insertion and replacement of an address.
      * Should be called immediately before ReplacementPolicy's findVictim()

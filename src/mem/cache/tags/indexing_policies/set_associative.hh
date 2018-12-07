@@ -81,7 +81,7 @@ class ReplaceableEntry;
  */
 class SetAssociative : public BaseIndexingPolicy
 {
-  private:
+  public:
     /**
      * Apply a hash function to calculate address set.
      *
@@ -90,7 +90,6 @@ class SetAssociative : public BaseIndexingPolicy
      */
     uint32_t extractSet(const Addr addr) const;
 
-  public:
     /**
      * Convenience typedef.
      */

@@ -60,11 +60,17 @@
 #include "sim/global_event.hh"
 
 using namespace std;
+Stats::Value AccessAT;
+Stats::Value HitAT;
+Stats::Value MissAT;
 
 Stats::Formula simSeconds;
 Stats::Value simTicks;
 Stats::Value finalTick;
 Stats::Value simFreq;
+int access_at = 0;
+int hit_count = 0;
+int miss_count = 0;
 
 namespace Stats {
 
@@ -96,6 +102,21 @@ Tick
 statElapsedTicks()
 {
     return curTick() - startTick;
+}
+int
+statAccessAT()
+{
+    return access_at;
+}
+int
+statHitAT()
+{
+    return hit_count;
+}
+int
+statMissAT()
+{
+    return miss_count;
 }
 
 Tick
@@ -161,7 +182,21 @@ Global::Global()
         .desc("Number of ticks from beginning of simulation "
               "(restored from checkpoints and never reset)")
         ;
-
+    HitAT
+        .functor(statHitAT)
+        .name("hit_at")
+        .desc("Number of hit in ATCache)")
+        ;
+    MissAT
+        .functor(statMissAT)
+        .name("miss_at")
+        .desc("Number of miss in ATCache)")
+        ;
+    AccessAT
+        .functor(statAccessAT)
+        .name("access_at")
+        .desc("Number of access in ATCache)")
+        ;
     hostInstRate
         .name("host_inst_rate")
         .desc("Simulator instruction rate (inst/s)")
