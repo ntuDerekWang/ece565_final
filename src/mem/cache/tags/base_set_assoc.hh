@@ -154,6 +154,11 @@ class BaseSetAssoc : public BaseTags
        }
 
        if ((it->second).size() >= 16) {
+            /***
+               Randomly pickup an item in the certain set.
+               Follow the code from this approach:
+               https://goo.gl/GTurg7
+            ***/
             int bucket, bucket_size;
             do {
                 bucket = random_mt.random(0,
