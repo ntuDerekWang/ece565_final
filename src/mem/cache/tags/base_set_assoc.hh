@@ -173,7 +173,7 @@ class BaseSetAssoc : public BaseTags
     CacheBlk* accessBlock(Addr addr, bool is_secure, Cycles &lat) override
     {
         bool TagInAtcache = false;
-        if (numEntriesAtcache != 0) {
+        if (EnableAtcache) {
             TagInAtcache = hitTaginAtcache(addr);
             if (!TagInAtcache) {
                 insertTaginAtcache(addr);
@@ -203,7 +203,7 @@ class BaseSetAssoc : public BaseTags
         }
 
         // The tag lookup latency is the same for a hit or a miss
-        if (numEntriesAtcache != 0 ) {
+        if (EnableAtcache) {
             access_at++;
             lat = AtcacheLookupLatency;
             if (!TagInAtcache) {

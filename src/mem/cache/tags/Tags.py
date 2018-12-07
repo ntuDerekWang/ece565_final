@@ -73,7 +73,7 @@ class BaseTags(ClockedObject):
     entry_size = Param.Int(Parent.cache_line_size,
                            "Indexing entry size in bytes")
 
-    numEntriesAtcache = Param.Int(0, "number of entries in Atcache")
+    EnableAtcache = Param.Bool(False, "Enable ATcache for caching tags")
     AtcacheLookupLatency = Param.Cycles(1, "Atcache lookup latency")
 
 class BaseSetAssoc(BaseTags):
