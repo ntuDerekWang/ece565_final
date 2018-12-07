@@ -49,7 +49,6 @@
 #define __MEM_CACHE_TAGS_BASE_SET_ASSOC_HH__
 
 #include <functional>
-#include <iostream>
 #include <map>
 #include <string>
 #include <unordered_set>
@@ -175,16 +174,10 @@ class BaseSetAssoc : public BaseTags
     {
         bool TagInAtcache = false;
         if (numEntriesAtcache != 0) {
-            //cout << "000 Atcache.size: " << Atcache.size() << endl;
             TagInAtcache = hitTaginAtcache(addr);
             if (!TagInAtcache) {
-//                Addr tag = extractTag(addr);
                 insertTaginAtcache(addr);
-              //  cout << "Miss!!!!!" << endl;
-            } //else
-                //cout << "Hit!!!!!" << endl;
-            //cout << "111 Atcache.size: " << Atcache.size() << endl;
-
+            }
         }
         CacheBlk *blk = findBlock(addr, is_secure);
 
