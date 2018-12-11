@@ -58,6 +58,90 @@ from caches import *
 from common import SimpleOpts
 import spec2k6
 import Options
+import Simulation
+import optparse
+
+parser = optparse.OptionParser()
+Options.addCommonOptions(parser)
+Options.addSEOptions(parser)
+
+# Benchmark options
+
+parser.add_option("-b", "--benchmark", default="",
+                 help="The benchmark to be loaded.")
+parser.add_option("-z", "--enable_atacahe", default="",
+                 help="Enable atcache.")
+
+(options, args) = parser.parse_args()
+if options.benchmark == 'perlbench':
+   process = spec2k6.perlbench
+elif options.benchmark == 'bzip2':
+   process = spec2k6.bzip2
+elif options.benchmark == 'gcc':
+   process = spec2k6.gcc
+elif options.benchmark == 'bwaves':
+   process = spec2k6.bwaves
+elif options.benchmark == 'gamess':
+   process = spec2k6.gamess
+elif options.benchmark == 'mcf':
+   process = spec2k6.mcf
+elif options.benchmark == 'milc':
+   process = spec2k6.milc
+elif options.benchmark == 'zeusmp':
+   process = spec2k6.zeusmp
+elif options.benchmark == 'gromacs':
+   process = spec2k6.gromacs
+elif options.benchmark == 'cactusADM':
+   process = spec2k6.cactusADM
+elif options.benchmark == 'leslie3d':
+   process = spec2k6.leslie3d
+elif options.benchmark == 'namd':
+   process = spec2k6.namd
+elif options.benchmark == 'gobmk':
+   process = spec2k6.gobmk;
+elif options.benchmark == 'dealII':
+   process = spec2k6.dealII
+elif options.benchmark == 'soplex':
+   process = spec2k6.soplex
+elif options.benchmark == 'povray':
+   process = spec2k6.povray
+elif options.benchmark == 'calculix':
+   process = spec2k6.calculix
+elif options.benchmark == 'hmmer':
+   process = spec2k6.hmmer
+elif options.benchmark == 'sjeng':
+   process = spec2k6.sjeng
+elif options.benchmark == 'GemsFDTD':
+   process = spec2k6.GemsFDTD
+elif options.benchmark == 'libquantum':
+   process = spec2k6.libquantum
+elif options.benchmark == 'h264ref':
+   process = spec2k6.h264ref
+elif options.benchmark == 'tonto':
+   process = spec2k6.tonto
+elif options.benchmark == 'lbm':
+   process = spec2k6.lbm
+elif options.benchmark == 'omnetpp':
+   process = spec2k6.omnetpp
+elif options.benchmark == 'astar':
+   process = spec2k6.astar
+elif options.benchmark == 'wrf':
+   process = spec2k6.wrf
+elif options.benchmark == 'sphinx3':
+   process = spec2k6.sphinx3
+elif options.benchmark == 'xalancbmk':
+   process = spec2k6.xalancbmk
+elif options.benchmark == 'specrand_i':
+   process = spec2k6.specrand_i
+elif options.benchmark == 'specrand_f':
+   process = spec2k6.specrand_f
+
+if options.enable_atacahe == 'True':
+   enable_atacahe = True
+elif options.enable_atacahe == 'False':
+   enable_atacahe = False
+
+'''
 # Set the usage message to display
 SimpleOpts.set_usage("usage: %prog [options] <binary to execute>")
 
@@ -77,25 +161,25 @@ if len(args) == 1:
 elif len(args) > 1:
     SimpleOpts.print_help()
     m5.fatal("Expected a binary to execute as positional argument")
-
+'''
 # create the system we are going to simulate
 system = System()
 
 # Set the clock fequency of the system (and all of its children)
 system.clk_domain = SrcClockDomain()
-system.clk_domain.clock = '1GHz'
+system.clk_domain.clock = '3GHz'
 system.clk_domain.voltage_domain = VoltageDomain()
 
 # Set up the system
 system.mem_mode = 'timing'               # Use timing accesses
-system.mem_ranges = [AddrRange('512MB')] # Create an address range
+system.mem_ranges = [AddrRange('2048MB')] # Create an address range
 
 # Create a simple CPU
-system.cpu = TimingSimpleCPU()
+system.cpu = DerivO3CPU()
 
 # Create an L1 instruction and data cache
-system.cpu.icache = L1ICache(opts)
-system.cpu.dcache = L1DCache(opts)
+system.cpu.icache = L1ICache()
+system.cpu.dcache = L1DCache()
 
 # Connect the instruction and data caches to the CPU
 system.cpu.icache.connectCPU(system.cpu)
@@ -109,7 +193,7 @@ system.cpu.icache.connectBus(system.l2bus)
 system.cpu.dcache.connectBus(system.l2bus)
 
 # Create an L2 cache and connect it to the l2bus
-system.l2cache = L2Cache(opts)
+system.l2cache = L2Cache()
 system.l2cache.connectCPUSideBus(system.l2bus)
 
 # Create a memory bus
@@ -117,6 +201,15 @@ system.membus = SystemXBar()
 
 # Connect the L2 cache to the membus
 system.l2cache.connectMemSideBus(system.membus)
+system.l2cache.tags.EnableAtcache = enable_atacahe
+system.l2cache.tags.warmup_percentage = 90
+system.l2cache.tags.AtcacheLookupLatency = 2
+system.l2cache.sequential_access = True
+system.l2cache.tag_latency = 35
+system.l2cache.data_latency = 25
+system.l2cache.response_latency = 35
+system.l2cache.assoc = 16
+system.l2cache.size = '256MB'
 
 # create the interrupt controller for the CPU
 system.cpu.createInterruptController()
@@ -138,8 +231,8 @@ system.mem_ctrl.port = system.membus.master
 
 # Create a process for a simple "Hello World" application
 #process = Process()
-process = spec2k6.povray
-
+#process = spec2k6.povray
+#process = spec2k6.gcc
 
 # Set the command
 # cmd is a list which begins with the executable (like argv)
@@ -147,7 +240,7 @@ process = spec2k6.povray
 # Set the cpu to use the process as its workload and create thread contexts
 system.cpu.workload = process
 system.cpu.createThreads()
-system.cpu.max_insts_any_thread = 250000
+system.cpu.max_insts_any_thread = 10000000000
 # set up the root SimObject and start the simulation
 root = Root(full_system = False, system = system)
 # instantiate all of the objects we've created above
